@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Habit Tracker",
+    "slug": "habit-tracker",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "94a0dd2e-6093-4ef4-9055-b0952017b4b7"
+      }
+    },
+    "owner": "kaustuvkarans-team"
+  }
+}
