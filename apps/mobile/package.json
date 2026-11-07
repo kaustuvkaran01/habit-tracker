@@ -6,7 +6,8 @@
   "scripts": {
     "start": "expo start --go",
     "typecheck": "tsc --noEmit",
-    "check:rewards": "node scripts/check-rewards.cjs"
+    "check:rewards": "node scripts/check-rewards.cjs",
+    "check:feedback": "node scripts/check-feedback.cjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
