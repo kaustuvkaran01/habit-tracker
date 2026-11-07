@@ -1,14 +1,24 @@
+import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 
-export default function App() {
-  return <View style={styles.screen}>
-    <StatusBar style="light" />
-    <Text style={styles.title}>Habit Tracker</Text>
-  </View>;
+import HomeScreen from './src/screens/home-screen';
+import { initializeHaptics } from './src/utils/feedback';
+import { ThemeProvider, useTheme } from './src/components/theme';
+
+function ThemedApp() {
+  const { mode } = useTheme();
+  return <>
+    <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+    <HomeScreen />
+  </>;
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#101012', alignItems: 'center', justifyContent: 'center' },
-  title: { color: '#F1F0F4', fontSize: 24, fontWeight: '600' },
-});
+export default function App() {
+  useEffect(() => { void initializeHaptics(); }, []);
+  return (
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <ThemeProvider><ThemedApp /></ThemeProvider>
+    </SafeAreaProvider>
+  );
+}
