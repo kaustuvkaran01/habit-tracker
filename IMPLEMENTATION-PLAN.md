@@ -1,5 +1,7 @@
 # Implementation plan
 
+**Inactive reference after rollback, 5 November 2026.** The previous M1 implementation has been removed. A fresh scope and permitted resource use must be agreed with the user under [AGENTS.md](AGENTS.md) before implementation resumes. The milestones below are retained for reference.
+
 Created and revised: 4 November 2026. Status: M0 verified complete; M1 is next. Application implementation has not started. This revision supersedes the SwiftUI/iPhone-and-Mac implementation route.
 
 ## Delivery target
