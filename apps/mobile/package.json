@@ -5,6 +5,7 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start --go",
+    "check": "node scripts/check.cjs",
     "typecheck": "tsc --noEmit",
     "check:rewards": "node scripts/check-rewards.cjs",
     "check:feedback": "node scripts/check-feedback.cjs",
@@ -21,7 +22,8 @@
     "check:notifications": "node scripts/check-reminder-integration.cjs",
     "check:backups": "node scripts/check-backups.cjs",
     "check:backup-ui": "node scripts/check-backup-ui.cjs",
-    "check:privacy": "node scripts/check-privacy.cjs"
+    "check:privacy": "node scripts/check-privacy.cjs",
+    "check:sources": "node scripts/check-sources.cjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

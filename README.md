@@ -6,6 +6,8 @@ A React Native app for iOS and Android to build habits and quit unwanted ones, w
 
 ## Start here
 
+For local regression, run `npm run check` inside `apps/mobile`. It runs TypeScript, every `check:*` regression script, import/casing checks and iOS/Android source transforms using installed dependencies. It starts no server or native build. Individual checks remain available for focused debugging. See the [code-quality review](docs/CODE-QUALITY-REVIEW.md) for the current audit and per-step evidence.
+
 - [Current launch checklist](docs/LAUNCH-CHECKLIST.md) covers the remaining product work and App Store release requirements.
 - [L04 achievement celebrations](docs/L04-ACHIEVEMENTS.md) explains wallpaper/badge reveals, queue and delivery policy, and device checks.
 - [L05 Free/Pro access](docs/L05-FREE-PRO.md) records the confirmed split, four-habit selection, archive recovery and local checks. Billing remains unconnected until L19; current app access is Free.
