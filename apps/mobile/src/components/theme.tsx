@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n/context';
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import { Alert, useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -19,14 +20,16 @@ const light: typeof dark = {
 };
 
 type ThemeMode = 'light' | 'dark';
-const ThemeContext = createContext<{ choice: ThemeChoice; mode: ThemeMode; setChoice: (choice: ThemeChoice) => void }>({
-  choice: 'Dark', mode: 'dark', setChoice: () => {},
+const ThemeContext = createContext<{ choice: ThemeChoice; mode: ThemeMode; setChoice: (choice: ThemeChoice) => void; prepareForErase: () => Promise<void> }>({
+  choice: 'Dark', mode: 'dark', setChoice: () => {}, async prepareForErase() {},
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const system = useColorScheme();
   const [choice, setChoice] = useState<ThemeChoice>('Dark');
   const changed = useRef(false);
+  const frozen = useRef(false);
   const writes = useRef(Promise.resolve());
 
   useEffect(() => {
@@ -38,17 +41,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   function choose(next: ThemeChoice) {
+    if (frozen.current) return;
     changed.current = true;
     setChoice(next);
     const write = writes.current.then(() => AsyncStorage.setItem(STORAGE_KEY, next));
     const pending = write.catch(() => {
-      if (writes.current === pending) Alert.alert('Theme preference not saved', 'Your choice applies for this session. Select it again to retry saving.');
+      if (writes.current === pending) Alert.alert(t('Theme preference not saved'), t('Your choice applies for this session. Select it again to retry saving.'));
     });
     writes.current = pending;
   }
 
   const mode = choice === 'System' ? system === 'light' ? 'light' : 'dark' : choice === 'Light' ? 'light' : 'dark';
-  return <ThemeContext.Provider value={{ choice, mode, setChoice: choose }}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={{ choice, mode, setChoice: choose, async prepareForErase() { frozen.current = true; await writes.current.catch(() => undefined); } }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

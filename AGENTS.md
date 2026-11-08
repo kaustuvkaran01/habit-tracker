@@ -15,6 +15,7 @@ The previous M1 implementation was explicitly cancelled and rolled back on 5 Nov
 - Start each agreed step with a short scope: intended files, allowed checks, expected resource use and stopping point.
 - Implement only that step. Do not automatically proceed into later milestones or provision missing prerequisites.
 - Use lightweight checks with existing tools by default. If a check needs a missing tool or substantial download/build, report that dependency and wait for approval instead of installing it.
+- For UI sizing and spacing, use the shared design tokens and follow [the design system](docs/DESIGN-SYSTEM.md). Preserve minimum touch targets and keep chart/calendar/artwork geometry distinct from ordinary controls.
 - Keep changes reviewable. Do not generate a large scaffold, extra tooling, instruction files or dependencies merely because a generator recommends them.
 - At completion, report actual changes, checks run, limitations and running processes. Do not mark a milestone complete when required checks remain unverified.
 

@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n/context';
 import { useId } from 'react';
 import { Image, View } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
@@ -16,11 +17,16 @@ const PHOTOS = {
   30: { source: require('../../assets/wallpapers/discipline.jpg'), background: '#EEEAE7' },
   45: { source: require('../../assets/wallpapers/consistency.jpg'), background: '#080808' },
 };
+// Reserve the text area when translated labels are longer than their English source.
+function artFontSize(text: string, size: number, width: number, spacing: number) {
+  return Math.min(size, Math.max(5, (width - spacing * Math.max(0, text.length - 1)) / Math.max(1, text.length * 0.62)));
+}
 const VIEW_HEIGHT = 360 / WALLPAPER_ASPECT_RATIO;
 
 export function CollectionWallpaper({ days, width, edition = 'landscape', onReady, onError }: {
   days: WallpaperMilestone; width: number; edition?: WallpaperEdition; onReady?: () => void; onError?: () => void;
 }) {
+  const { t } = useTranslation();
   const id = `wall-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const photo = edition === 'quote' && days <= 45 ? PHOTOS[days as keyof typeof PHOTOS] : undefined;
   const scene = WALLPAPER_SCENES[days];
@@ -29,7 +35,7 @@ export function CollectionWallpaper({ days, width, edition = 'landscape', onRead
   return <View style={{ width, height, overflow: 'hidden', backgroundColor: photo?.background ?? scene.sky }}
     onLayout={() => { if (!photo) onReady?.(); }}>
     {photo ? <Image source={photo.source} resizeMode="contain" style={{ width, height }}
-      onLoad={onReady} onError={onError} accessibilityLabel={`${days}-day quote wallpaper: ${WALLPAPER_TITLES[days]}`} />
+      onLoad={onReady} onError={onError} accessibilityLabel={t("{value0}-day quote wallpaper: {value1}", { value0: days, value1: t(WALLPAPER_TITLES[days]) })} />
       : <Svg width="100%" height="100%" viewBox={`0 0 360 ${VIEW_HEIGHT}`} accessible={false}>
         <Defs><LinearGradient id={id} x1="0" y1="0" x2="0.8" y2="1"><Stop offset="0" stopColor={scene.sky} /><Stop offset="1" stopColor={scene.horizon} /></LinearGradient></Defs>
         <Rect width="360" height={VIEW_HEIGHT} fill={`url(#${id})`} />
@@ -44,10 +50,10 @@ export function CollectionWallpaper({ days, width, edition = 'landscape', onRead
         <Path d="M0 695Q115 620 205 684T360 665V900H0Z" fill={scene.near} />
         {scene.motif === 'ocean' && <G stroke={scene.sun} opacity="0.25" strokeWidth="1" strokeLinecap="round"><Path d="M110 580h140M135 589h90M92 600h165M123 611h105" /></G>}
         <G fill="#F8EEDD" textAnchor="middle" fontFamily="System">
-          <SvgText x="180" y="240" fontSize="10" letterSpacing="4">ONE DAY AT A TIME</SvgText>
+          <SvgText x="180" y="240" fontSize={artFontSize(t("ONE DAY AT A TIME"), 10, 304, 2)} letterSpacing="2">{t("ONE DAY AT A TIME")}</SvgText>
           <SvgText x="180" y="323" fontSize="70" fontWeight="800">{days}</SvgText>
-          <SvgText x="180" y="352" fontSize="11" letterSpacing="3">DAYS OF SHOWING UP</SvgText>
-          <SvgText x="180" y={VIEW_HEIGHT - 42} fontSize="9" letterSpacing="2.1">{scene.footer}</SvgText>
+          <SvgText x="180" y="352" fontSize={artFontSize(t("DAYS OF SHOWING UP"), 11, 304, 2)} letterSpacing="2">{t("DAYS OF SHOWING UP")}</SvgText>
+          <SvgText x="180" y={VIEW_HEIGHT - 42} fontSize={artFontSize(t(scene.footer), 9, 304, 1.5)} letterSpacing="1.5">{t(scene.footer)}</SvgText>
         </G>
         {[38, 81, 280, 313].map((x, index) => <Circle key={x} cx={x} cy={48 + index * 41} r="1" fill={scene.sun} opacity="0.5" />)}
       </Svg>}
@@ -101,15 +107,16 @@ function AnimalPortrait({ animal, accent }: { animal: PatchAnimal; accent: strin
 }
 
 export function ChampionBadgeArt({ cycle, size = 240 }: { cycle: number; size?: number }) {
+  const { t, locale } = useTranslation();
   const design = badgeDesignForCycle(cycle);
   return <Svg width={size} height={size} viewBox="0 0 300 300" accessible={false}>
     <Path d="M69 25h162q22 0 27 22l17 144q3 18-13 29l-97 61q-15 10-30 0l-97-61q-16-11-13-29L42 47q5-22 27-22Z" fill="#101A21" stroke="#070E13" strokeWidth="7" strokeLinejoin="round" />
     <Path d="M69 33h162q15 0 19 17l17 140q2 14-12 24l-96 60q-9 6-18 0l-96-60q-14-10-12-24L50 50q4-17 19-17Z" fill="#1E2B33" stroke={design.accent} strokeWidth="4" />
     <Path d="M70 42h160q8 0 11 12l16 134q2 10-7 16l-94 59q-6 4-12 0l-94-59q-9-6-7-16L59 54q3-12 11-12Z" fill="none" stroke={design.accent} strokeWidth="1.3" strokeDasharray="2 4" opacity="0.65" />
-    <SvgText x="150" y="64" textAnchor="middle" fill={design.accent} fontFamily="System" fontWeight="800" fontSize="13" letterSpacing="3">{design.virtue.toUpperCase()}</SvgText>
+    <SvgText x="150" y="64" textAnchor="middle" fill={design.accent} fontFamily="System" fontWeight="800" fontSize={artFontSize(t(design.virtue).toLocaleUpperCase(locale), 13, 158, 1.5)} letterSpacing="1.5">{t(design.virtue).toLocaleUpperCase(locale)}</SvgText>
     <AnimalPortrait animal={design.animal} accent={design.accent} />
     <Path d="M77 213h146l-7 30H84Z" fill="#101A21" stroke={design.accent} strokeWidth="1.5" strokeLinejoin="round" />
-    <SvgText x="150" y="233" textAnchor="middle" fill="#E8E0CD" fontFamily="System" fontWeight="800" fontSize="14" letterSpacing="2">{design.name.toUpperCase()}</SvgText>
-    <SvgText x="150" y="258" textAnchor="middle" fill={design.accent} fontFamily="System" fontWeight="700" fontSize="10" letterSpacing="1.5">90 DAYS</SvgText>
+    <SvgText x="150" y="233" textAnchor="middle" fill="#E8E0CD" fontFamily="System" fontWeight="800" fontSize={artFontSize(t(design.name).toLocaleUpperCase(locale), 14, 134, 1.5)} letterSpacing="1.5">{t(design.name).toLocaleUpperCase(locale)}</SvgText>
+    <SvgText x="150" y="258" textAnchor="middle" fill={design.accent} fontFamily="System" fontWeight="700" fontSize="10" letterSpacing="1.5">{t("{count} days", { count: 90 })}</SvgText>
   </Svg>;
 }

@@ -1,8 +1,9 @@
 import { type ReactNode } from 'react';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
+import { HABIT_ICONS, type HabitSymbolName } from '../data/habit-icons';
 import { useTheme } from './theme';
 
-export type AppIconName = 'pulse' | 'workout' | 'book' | 'moon' | 'leaf' | 'target'
+export type AppIconName = HabitSymbolName | 'search' | 'clock' | 'pulse' | 'workout' | 'book' | 'moon' | 'leaf' | 'target'
   | 'gear' | 'share' | 'chart' | 'plus' | 'minus' | 'close' | 'edit' | 'check'
   | 'chevron-left' | 'chevron-right' | 'chevron-down' | 'chevron-up'
   | 'view-grid' | 'view-list' | 'view-month' | 'grid' | 'bell' | 'palette' | 'language'
@@ -28,7 +29,11 @@ function roundedGearPath() {
 const GEAR_PATH = roundedGearPath();
 
 function content(name: AppIconName): ReactNode {
+  const habit = HABIT_ICONS.find((icon) => icon.id === name);
+  if (habit && name.startsWith('habit-')) return <Path d={habit.path} />;
   switch (name) {
+    case 'search': return <><Circle cx="10.5" cy="10.5" r="7" /><Path d="m16 16 5 5" /></>;
+    case 'clock': return <><Circle cx="12" cy="12" r="9" /><Path d="M12 6v6l4 3" /></>;
     case 'pulse': return <Path d="M3 12h4l2.4 6.5L13.2 5l2.5 7H21" />;
     case 'workout': return <><Rect x="4.5" y="6.5" width="4" height="11" rx="1.5" /><Rect x="15.5" y="6.5" width="4" height="11" rx="1.5" /><Path d="M8.5 12h7M2 9.5v5m20-5v5" /></>;
     case 'book': return <><Path d="M12 5.5C9.5 3.8 6.1 3.5 3 4.8v14c3.1-1.3 6.5-1 9 .7 2.5-1.7 5.9-2 9-.7v-14c-3.1-1.3-6.5-1-9 .7Z M12 5.5v14" /><Path d="M6 8h3m6 0h3" /></>;

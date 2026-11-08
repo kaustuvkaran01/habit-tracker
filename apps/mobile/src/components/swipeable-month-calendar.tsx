@@ -1,6 +1,7 @@
 import { type ComponentRef, useLayoutEffect, useRef, useState } from 'react';
 import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView, StyleSheet, View } from 'react-native';
-import { type Habit, shiftMonth } from '../data/sample-habits';
+import { type Habit } from '../data/habit-types';
+import { shiftMonth } from '../data/habit-calendar';
 import { MonthCalendar } from './habit-views';
 import { feedback } from '../utils/feedback';
 

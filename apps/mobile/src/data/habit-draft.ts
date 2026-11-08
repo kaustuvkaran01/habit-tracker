@@ -1,15 +1,15 @@
-import { dateKey, type Habit, type HabitIconName } from './sample-habits';
+import { type Habit, type HabitIconName } from './habit-types';
+import { dateKey } from './habit-calendar';
+import { currentConfiguration, initializeEntries } from './habit-entries';
 import { normalizedHabitEmoji } from './habit-emoji';
+import { habitReminderTimes, validReminderTime } from './reminder-settings';
 
 export const HABIT_COLORS = [
   '#FA6C70', '#FF923D', '#FFC52E', '#F7D326', '#A6E92D', '#45D97C', '#2ECC9B',
   '#2DCCBC', '#25CBE2', '#39B7EF', '#609FF1', '#8384F7', '#A289F5', '#BE82F0',
   '#DD70EE', '#EE71BA', '#F76B8E', '#93A2B7', '#969DA9', '#A4A4A5', '#A59F9B',
 ];
-export const HABIT_ICONS: { id: HabitIconName; label: string }[] = [
-  { id: 'pulse', label: 'Heartbeat' }, { id: 'workout', label: 'Workout' }, { id: 'book', label: 'Reading' },
-  { id: 'moon', label: 'Sleep' }, { id: 'leaf', label: 'Nature' }, { id: 'target', label: 'Focus' },
-];
+export { HABIT_ICONS } from './habit-icons';
 export const CATEGORIES = ['Health', 'Fitness', 'Learning', 'Mindfulness', 'Personal'];
 
 export type HabitDraft = {
@@ -17,7 +17,13 @@ export type HabitDraft = {
   repeatDays: number[]; trackingKind: 'yes-no' | 'count' | 'measure'; target: string; unit: string;
   onTap: 'add-one' | 'enter-total';
   reminderTime: string | null; categories: string[];
+  extraReminderTimes?: string[]; reminderDiscreet?: boolean;
+  remindersPaused?: boolean;
 };
+
+export function draftReminderTimes(draft: HabitDraft) {
+  return draft.reminderTime === null ? [] : [draft.reminderTime, ...(draft.extraReminderTimes ?? [])];
+}
 
 export function emptyDraft(): HabitDraft {
   return {
@@ -33,7 +39,7 @@ export function draftFromHabit(habit: Habit): HabitDraft {
     repeatDays: [...(habit.repeatDays ?? [0, 1, 2, 3, 4, 5, 6])].sort((a, b) => a - b),
     trackingKind: habit.tracking?.kind ?? 'yes-no', target: String(habit.tracking?.target ?? 1),
     unit: habit.tracking?.unit ?? '', onTap: habit.tracking?.onTap ?? 'add-one',
-    reminderTime: habit.reminderTime ?? null, categories: [...(habit.categories ?? [])],
+    reminderTime: habitReminderTimes(habit)[0] ?? null, extraReminderTimes: habitReminderTimes(habit).slice(1), reminderDiscreet: habit.reminderDiscreet !== false, remindersPaused: habit.remindersPaused === true, categories: [...(habit.categories ?? [])],
   };
 }
 
@@ -47,10 +53,13 @@ export function draftError(draft: HabitDraft): string | null {
     if (!targetText || !Number.isFinite(target) || target < 0 || (draft.habitType === 'build' && target === 0)) {
       return draft.habitType === 'quit' ? 'Enter a daily limit of zero or more.' : 'Enter a daily target greater than zero.';
     }
-    if (draft.trackingKind === 'count' && !Number.isInteger(target)) return 'Use a whole number for a count target.';
+    if (draft.trackingKind === 'count' && !Number.isSafeInteger(target)) return 'Use a whole number for a count target.';
     if (draft.trackingKind === 'measure' && !draft.unit.trim()) return 'Enter a unit, such as minutes or km.';
   }
   if (draft.reminderTime !== null && !/^([01]\d|2[0-3]):[0-5]\d$/.test(draft.reminderTime)) return 'Enter a reminder time as HH:mm, for example 09:00.';
+  const times = draftReminderTimes(draft);
+  if (times.length > 3 || times.some(time => !validReminderTime(time))) return 'Use up to three valid reminder times.';
+  if (new Set(times).size !== times.length) return 'Choose different reminder times.';
   return null;
 }
 
@@ -75,7 +84,7 @@ function settingsFromDraft(draft: HabitDraft) {
     habitType: draft.habitType, repeatDays: [...draft.repeatDays].sort((a, b) => a - b),
     tracking: { kind: draft.trackingKind, ...(draft.trackingKind !== 'yes-no' ? { target: Number(draft.target.replace(',', '.')), onTap: draft.onTap ?? 'add-one' } : {}),
       ...(draft.trackingKind === 'measure' ? { unit: draft.unit.trim() } : {}) },
-    reminderTime: draft.reminderTime, categories: [...draft.categories],
+    reminderTime: draft.reminderTime, reminderTimes: draftReminderTimes(draft), reminderDiscreet: draft.reminderDiscreet !== false, remindersPaused: draft.remindersPaused === true, categories: [...draft.categories],
   };
 }
 
@@ -83,6 +92,12 @@ export function habitFromDraft(draft: HabitDraft, today: Date, id: string): Habi
   return { ...settingsFromDraft(draft), id, createdOn: dateKey(today), checkIns: [], notes: {} };
 }
 
-export function updateHabitFromDraft(habit: Habit, draft: HabitDraft): Habit {
-  return { ...habit, ...settingsFromDraft(draft) };
+export function updateHabitFromDraft(habit: Habit, draft: HabitDraft, today: Date): Habit {
+  const settings = settingsFromDraft(draft);
+  const initialized = initializeEntries(habit);
+  const next = { ...initialized, ...settings };
+  const configuration = currentConfiguration(next);
+  if (JSON.stringify(configuration) === JSON.stringify(currentConfiguration(habit))) return next;
+  const effectiveOn = dateKey(today);
+  return { ...next, configurationHistory: [...initialized.configurationHistory!.filter(item => item.effectiveOn !== effectiveOn), { effectiveOn, configuration }].sort((a, b) => (a.effectiveOn ?? '').localeCompare(b.effectiveOn ?? '')) };
 }

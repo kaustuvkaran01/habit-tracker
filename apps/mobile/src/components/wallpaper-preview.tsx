@@ -1,5 +1,7 @@
+import Modal from './private-modal';
+import { useTranslation } from '../i18n/context';
 import { useRef, useState } from 'react';
-import { Image, Modal, Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Image, Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Pressable from './haptic-pressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrimaryButton } from './preference-ui';
@@ -15,6 +17,7 @@ const WALLPAPERS = [
 ];
 
 export default function WallpaperPreview({ visible, onClose, onExplore }: { visible: boolean; onClose: () => void; onExplore?: () => void }) {
+  const { t } = useTranslation();
   const { height, width } = useWindowDimensions();
   const [frontCard, setFrontCard] = useState(2);
   const styles = useStyles();
@@ -37,16 +40,16 @@ export default function WallpaperPreview({ visible, onClose, onExplore }: { visi
 
   return <Modal visible={visible} transparent animationType="fade" presentationStyle="overFullScreen" statusBarTranslucent onRequestClose={onClose} onDismiss={finishDismissal}>
     <View style={[styles.overlay, { paddingTop: insets.top + 16, paddingBottom: Math.max(insets.bottom, 16) }]}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Close wallpaper preview" onPress={onClose} style={StyleSheet.absoluteFill} />
+      <Pressable accessibilityRole="button" accessibilityLabel={t("Close wallpaper preview")} onPress={onClose} style={StyleSheet.absoluteFill} />
       <View accessibilityViewIsModal onAccessibilityEscape={onClose} style={styles.card}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close wallpaper preview" onPress={onClose}
+        <Pressable accessibilityRole="button" accessibilityLabel={t("Close wallpaper preview")} onPress={onClose}
           style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
           <AppIcon name="close" size={20} color="#FFFFFF" />
         </Pressable>
         <ScrollView bounces={false} indicatorStyle={mode === 'dark' ? 'white' : 'black'} style={styles.scroll}>
           <View style={[styles.artwork, { height: cardHeight + 80 }]}>
             {WALLPAPERS.map((wallpaper, index) => <Pressable key={wallpaper.label} accessibilityRole="button"
-              accessibilityLabel={`${wallpaper.label} wallpaper`} accessibilityHint="Bring this wallpaper to the front"
+              accessibilityLabel={t("{value0} wallpaper", { value0: t(wallpaper.label) })} accessibilityHint={t("Bring this wallpaper to the front")}
               accessibilityState={{ selected: frontCard === index }} onPress={() => setFrontCard(index)}
               style={[styles.wallpaperCard, {
                 width: cardWidth, height: cardHeight, marginLeft: -cardWidth / 2,
@@ -55,15 +58,15 @@ export default function WallpaperPreview({ visible, onClose, onExplore }: { visi
               }]}>
               <Image source={wallpaper.source} resizeMode="contain" accessible={false} style={styles.wallpaperImage} />
             </Pressable>)}
-            <Text style={styles.fanHint}>Tap a card to bring it forward</Text>
+            <Text style={styles.fanHint}>{t("Tap a card to bring it forward")}</Text>
           </View>
           <View style={styles.copy}>
-            <Text style={styles.eyebrow}>COLLECT A LITTLE MOTIVATION</Text>
-            <Text accessibilityRole="header" style={styles.title}>Your streak.{`\n`}Your wallpaper.</Text>
-            <Text style={styles.message}>Unlock wallpapers as your streak grows. Complete 90 scheduled days in a row for a permanent champion badge, then start a fresh cycle.</Text>
+            <Text style={styles.eyebrow}>{t("COLLECT A LITTLE MOTIVATION")}</Text>
+            <Text accessibilityRole="header" style={styles.title}>{t("Your streak.")}{`\n`}{t("Your wallpaper.")}</Text>
+            <Text style={styles.message}>{t("Unlock wallpapers as your streak grows. Complete 90 scheduled days in a row for a permanent champion badge, then start a fresh cycle.")}</Text>
           </View>
         </ScrollView>
-        <View style={styles.footer}><PrimaryButton onPress={explore}>{onExplore ? 'Explore the collection' : 'Got it!'}</PrimaryButton></View>
+        <View style={styles.footer}><PrimaryButton onPress={explore}>{onExplore ? t('Explore the collection') : t('Got it!')}</PrimaryButton></View>
       </View>
     </View>
   </Modal>;

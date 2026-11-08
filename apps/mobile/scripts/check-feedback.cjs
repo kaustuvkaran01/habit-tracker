@@ -79,8 +79,8 @@ async function run() {
     assert.equal(classify(before, before, '2026-11-05'), null);
     assert.equal(classify(before, complete, '2026-11-05'), 'completion');
     assert.equal(classify(complete, before, '2026-11-05'), 'undo');
-    assert.equal(classify(before, { ...complete, rewards: { wallpapers: [{}], badges: [] } }, '2026-11-05'), 'success');
-    assert.equal(classify(before, { ...complete, rewards: { wallpapers: [], badges: [{}] } }, '2026-11-05'), 'success');
+    assert.equal(classify(before, { ...complete, rewards: { wallpapers: [{}], badges: [] } }, '2026-11-05'), 'completion');
+    assert.equal(classify(before, { ...complete, rewards: { wallpapers: [], badges: [{}] } }, '2026-11-05'), 'completion');
     assert.equal(classify(complete, { ...complete, notes: { '2026-11-05': 'Edited note' } }, '2026-11-05'), null);
 
     const emitted = [], actions = [];

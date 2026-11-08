@@ -1,4 +1,5 @@
-import { dateKey, type Habit, repeatLabel, streakDays } from './sample-habits';
+import { type Habit } from './habit-types';
+import { dateKey, repeatLabel, streakDays } from './habit-calendar';
 
 export type ShareAppearance = {
   theme: 'dark' | 'light'; color: string;

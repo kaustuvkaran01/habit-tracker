@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n/context';
 import { useEffect, useId } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
@@ -9,6 +10,7 @@ const RADIUS = 105;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export default function CycleProgressRing({ completed }: { completed: number }) {
+  const { t } = useTranslation();
   const count = Math.max(0, Math.min(90, completed));
   const progress = useSharedValue(0);
   const styles = useStyles();
@@ -21,8 +23,8 @@ export default function CycleProgressRing({ completed }: { completed: number }) 
     strokeDashoffset: CIRCUMFERENCE * (1 - progress.value), opacity: progress.value > 0 ? 1 : 0,
   }));
 
-  return <View accessible accessibilityRole="progressbar" accessibilityLabel="90-day reward cycle"
-    accessibilityValue={{ min: 0, max: 90, now: count, text: `${count} of 90 days, ${90 - count} days to go` }} style={styles.ring}>
+  return <View accessible accessibilityRole="progressbar" accessibilityLabel={t("90-day reward cycle")}
+    accessibilityValue={{ min: 0, max: 90, now: count, text: t("{value0} of 90 days, {value1} days to go", { value0: count, value1: 90 - count }) }} style={styles.ring}>
     <Svg width={236} height={236} viewBox="0 0 236 236" accessible={false}>
       <Defs><LinearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1"><Stop offset="0" stopColor="#D1BEFF" /><Stop offset="1" stopColor={colors.accent} /></LinearGradient></Defs>
       <Circle cx={118} cy={118} r={RADIUS} fill="none" stroke={colors.control} strokeWidth={9} />
@@ -31,7 +33,7 @@ export default function CycleProgressRing({ completed }: { completed: number }) 
     </Svg>
     <View pointerEvents="none" style={styles.counter}>
       <Text allowFontScaling={false} style={styles.count}>{count}<Text style={styles.total}>/90</Text></Text>
-      <Text style={styles.remaining}>{90 - count} days to go</Text>
+      <Text style={styles.remaining}>{t("{count} days to go", { count: 90 - count })}</Text>
     </View>
   </View>;
 }

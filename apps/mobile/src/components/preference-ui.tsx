@@ -1,3 +1,5 @@
+import { space, layout, control, radius, typeSize } from './design-tokens';
+import { useTranslation } from '../i18n/context';
 import { type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Pressable from './haptic-pressable';
@@ -5,24 +7,25 @@ import { Chevron, RoundButton } from './habit-ui';
 import AppIcon, { type AppIconName } from './app-icon';
 import { accentForeground, createThemedStyles, useTheme } from './theme';
 
-export function SheetHeader({ title, onClose, onBack }: { title: string; onClose: () => void; onBack?: () => void }) {
+export function SheetHeader({ title, onClose, onBack, disabled = false }: { title: string; onClose: () => void; onBack?: () => void; disabled?: boolean }) {
+  const { t } = useTranslation();
   const styles = useStyles();
   return <View style={styles.header}>
     <View style={styles.grabber} />
     <View style={styles.headerRow}>
-      <RoundButton label={onBack ? 'Back to settings' : `Close ${title}`} onPress={onBack ?? onClose}>
+      <RoundButton disabled={disabled} label={onBack ? t('Back to settings') : t("Close {value0}", { value0: t(title) })} onPress={onBack ?? onClose}>
         {onBack ? <Chevron direction="left" /> : <AppIcon name="close" size={20} />}
       </RoundButton>
-      <Text accessibilityRole="header" style={styles.title}>{title}</Text>
+      <Text accessibilityRole="header" style={styles.title}>{t(title)}</Text>
       <View style={styles.spacer} />
     </View>
   </View>;
 }
 
-export function PrimaryButton({ children, onPress, trailingIcon }: { children: ReactNode; onPress: () => void; trailingIcon?: AppIconName }) {
+export function PrimaryButton({ children, onPress, trailingIcon, disabled = false }: { children: ReactNode; onPress: () => void; trailingIcon?: AppIconName; disabled?: boolean }) {
   const styles = useStyles();
   const { colors } = useTheme();
-  return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+  return <Pressable accessibilityRole="button" disabled={disabled} accessibilityState={{ disabled }} onPress={onPress} style={({ pressed }) => [styles.primary, (pressed || disabled) && styles.pressed]}>
     <Text style={styles.primaryText}>{children}</Text>
     {trailingIcon && <AppIcon name={trailingIcon} size={18} color={colors.onAccent} />}
   </Pressable>;
@@ -50,20 +53,20 @@ export function ProMark() {
 
 export const usePreferenceStyles = createThemedStyles((colors) => StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  scroll: { flex: 1 }, scrollContent: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 32 },
-  content: { width: '100%', maxWidth: 600, alignSelf: 'center', gap: 24 },
-  group: { backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.border, borderRadius: 23, borderCurve: 'continuous', overflow: 'hidden' },
-  section: { gap: 10 }, sectionLabel: { color: colors.subtle, fontSize: 12, fontWeight: '500', paddingLeft: 6, letterSpacing: 0.6 },
+  scroll: { flex: 1 }, scrollContent: { paddingHorizontal: layout.inset, paddingTop: space.md, paddingBottom: space.xl },
+  content: { width: '100%', maxWidth: layout.content, alignSelf: 'center', gap: layout.section },
+  group: { backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.border, borderRadius: radius.card, borderCurve: 'continuous', overflow: 'hidden' },
+  section: { gap: space.sm }, sectionLabel: { color: colors.subtle, fontSize: 12, fontWeight: '500', paddingLeft: space.xxs, letterSpacing: 0.6 },
   muted: { color: colors.muted, fontSize: 14, lineHeight: 21 },
 }));
 
 const useStyles = createThemedStyles((colors) => StyleSheet.create({
-  header: { backgroundColor: colors.background, paddingHorizontal: 14, paddingTop: 8, paddingBottom: 12 },
+  header: { backgroundColor: colors.background, paddingHorizontal: layout.inset, paddingTop: space.xs, paddingBottom: space.sm },
   grabber: { alignSelf: 'center', width: 42, height: 5, borderRadius: 3, backgroundColor: colors.controlBorder, marginBottom: 12 },
-  headerRow: { width: '100%', maxWidth: 600, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48 },
-  title: { flex: 1, textAlign: 'center', color: colors.text, fontSize: 21, fontWeight: '700' }, spacer: { width: 46 },
-  primary: { minHeight: 54, borderRadius: 28, paddingHorizontal: 16, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.accent },
-  primaryText: { flexShrink: 1, color: colors.onAccent, fontSize: 17, lineHeight: 23, fontWeight: '600', textAlign: 'center' }, pressed: { opacity: 0.65 },
+  headerRow: { width: '100%', maxWidth: layout.content, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: control.regular },
+  title: { flex: 1, textAlign: 'center', color: colors.text, fontSize: 21, fontWeight: '700', flexShrink: 1 }, spacer: { width: control.roundTarget },
+  primary: { minHeight: control.primary, borderRadius: radius.primary, paddingHorizontal: space.md, paddingVertical: space.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs, backgroundColor: colors.accent },
+  primaryText: { flexShrink: 1, color: colors.onAccent, fontSize: typeSize.action, lineHeight: 23, fontWeight: '600', textAlign: 'center' }, pressed: { opacity: 0.65 },
   iconTile: { width: 36, height: 36, borderRadius: 12, borderCurve: 'continuous', borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   proMark: { width: 56, height: 56, borderRadius: 14, backgroundColor: '#050506', alignItems: 'center', justifyContent: 'center', gap: 1.5 },
   markRow: { flexDirection: 'row', gap: 1.5 }, markCell: { width: 4, height: 4, borderRadius: 1 },

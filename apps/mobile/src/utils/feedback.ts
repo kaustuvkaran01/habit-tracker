@@ -1,13 +1,14 @@
 import { AppState, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { type Habit } from '../data/sample-habits';
+import { type Habit } from '../data/habit-types';
 
 export type FeedbackKind = 'press' | 'selection' | 'completion' | 'undo' | 'success' | 'longPress' | 'warning' | 'error';
 const PREFERENCE_KEY = '@habit-tracker/haptics/v1';
 const priority: Record<FeedbackKind, number> = { press: 1, selection: 1, undo: 1, completion: 2, longPress: 2, success: 3, warning: 3, error: 3 };
 let enabled = true;
 let ready = false;
+let frozen = false;
 let preferenceRevision = 0;
 let loading: Promise<void> | undefined;
 let saving: Promise<unknown> = Promise.resolve();
@@ -46,9 +47,8 @@ export function completionFeedbackFor(before: Habit, after: Habit, key: string):
   const isComplete = after.checkIns.includes(key);
   if (wasComplete === isComplete) return null;
   if (!isComplete) return 'undo';
-  const earnedReward = (after.rewards?.wallpapers.length ?? 0) > (before.rewards?.wallpapers.length ?? 0)
-    || (after.rewards?.badges.length ?? 0) > (before.rewards?.badges.length ?? 0);
-  return earnedReward ? 'success' : 'completion';
+  // Reward feedback belongs to the reveal after its delivery claim is saved.
+  return 'completion';
 }
 
 export const getHapticsEnabled = () => enabled;
@@ -68,6 +68,7 @@ export function initializeHaptics(): Promise<void> {
 }
 
 export async function setHapticsEnabled(value: boolean): Promise<void> {
+  if (frozen) return;
   if (ready && enabled === value) return;
   const revision = ++preferenceRevision;
   enabled = value;
@@ -79,4 +80,13 @@ export async function setHapticsEnabled(value: boolean): Promise<void> {
   try { await write; } catch (error) {
     if (revision === preferenceRevision) throw error;
   }
+}
+
+export async function prepareHapticsForErase() {
+  frozen = true;
+  await Promise.allSettled([loading, saving]);
+}
+export function resetHapticsAfterErase() {
+  preferenceRevision++; frozen = false; enabled = true; ready = false; loading = undefined;
+  saving = Promise.resolve(); lastTime = -Infinity; lastPriority = 0;
 }

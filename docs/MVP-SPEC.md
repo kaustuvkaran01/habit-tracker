@@ -76,11 +76,11 @@ HabitKit's published categories are the reference for the structure, not a requi
 - **Completed days:** scheduled days on which the target was met.
 - **Logged actions:** actual count increments, including partial days; label separately from completed days.
 - **Completion rate:** completed scheduled days / elapsed scheduled days in the selected window. Exclude today from this historical rate and show today's progress separately. An unlogged closed scheduled day is not completed.
-- **Current and best streak:** consecutive achieved scheduled days. Unscheduled days do not break the run. Today's unfinished goal has until day-end; completing it can extend the current streak.
+- **Current and best streak:** inclusive calendar days spanned by consecutive achieved scheduled dates. Rest days are added at the next scheduled completion. Unscheduled dates do not break the run; a missed scheduled day does. Today's unfinished goal has until day-end.
 - **Monthly bars:** completed scheduled days, with the month's denominator available.
 - **Time-of-day distribution:** occurrence time of logged actions, separated into morning, afternoon, evening and night. Exclude backdated entries without a supplied occurrence time; do not substitute the time the correction was entered.
 
-Example: a Monday/Wednesday/Friday habit completed on Monday and Wednesday has a two-session streak on Thursday. Thursday is unscheduled. Missing Friday breaks the run when Friday closes.
+Example: a Monday/Friday habit completed on Monday, Friday and the next Monday has an 8-day streak. On the weekend before that final Monday it remains 5 days, awaiting the next completion. Missing a scheduled Friday breaks the run when Friday closes.
 
 ### Quit habits
 

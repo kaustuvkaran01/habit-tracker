@@ -1,7 +1,8 @@
+import Modal from './private-modal';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { Modal, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { GestureDetector, GestureHandlerRootView, usePanGesture } from 'react-native-gesture-handler';
-import Animated, { cancelAnimation, Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, Easing, ReduceMotion, useAnimatedStyle, useDerivedValue, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { BACK_SWIPE_EDGE_WIDTH, backSwipeProgress, shouldCompleteBackSwipe } from './right-drawer-gesture';
 import { feedback } from '../utils/feedback';
@@ -11,16 +12,20 @@ type RightDrawerProps = {
   visible: boolean;
   children: ReactNode;
   inline?: boolean;
+  dismissDisabled?: boolean;
   onRequestClose: () => void;
   onDismiss?: () => void;
 };
 
-export default function RightDrawer({ visible, children, inline = false, onRequestClose, onDismiss }: RightDrawerProps) {
+export default function RightDrawer({ visible, children, inline = false, dismissDisabled = false, onRequestClose, onDismiss }: RightDrawerProps) {
   const styles = useStyles();
   const [presented, setPresented] = useState(false);
   const [inlineWidth, setInlineWidth] = useState(0);
   const progress = useSharedValue(1);
   const gestureAvailable = useSharedValue(false);
+  const blocked = useSharedValue(dismissDisabled);
+  useEffect(() => { blocked.value = dismissDisabled; }, [blocked, dismissDisabled]);
+  const gestureEnabled = useDerivedValue(() => gestureAvailable.value && !blocked.value);
   const dragging = useSharedValue(false);
   const isPresented = useRef(false);
   const gestureFinishedClosing = useRef(false);
@@ -64,7 +69,7 @@ export default function RightDrawer({ visible, children, inline = false, onReque
   }, [dragging, gestureAvailable, progress]);
 
   const backGesture = usePanGesture({
-    enabled: gestureAvailable,
+    enabled: gestureEnabled,
     runOnJS: false,
     cancelsJSResponder: true,
     shouldCancelWhenOutside: false,
@@ -151,7 +156,7 @@ export default function RightDrawer({ visible, children, inline = false, onReque
 
   const panel = <>
     <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.scrim, scrimStyle]} />
-    <Animated.View accessibilityViewIsModal onAccessibilityEscape={onRequestClose} pointerEvents={visible ? 'auto' : 'none'} style={[styles.panel, panelStyle]}>
+    <Animated.View accessibilityViewIsModal onAccessibilityEscape={() => { if (!dismissDisabled) onRequestClose(); }} pointerEvents={visible ? 'auto' : 'none'} style={[styles.panel, panelStyle]}>
       {children}
       <GestureDetector gesture={backGesture}>
         <View collapsable={false} accessible={false} importantForAccessibility="no" style={styles.backGestureEdge} />

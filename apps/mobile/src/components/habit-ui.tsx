@@ -1,7 +1,9 @@
+import { space, control } from './design-tokens';
+import { useTranslation } from '../i18n/context';
 import { type ReactNode } from 'react';
-import { Alert, Platform, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Platform, StatusBar, StyleSheet, Text, View } from 'react-native';
 import Pressable from './haptic-pressable';
-import { type Habit } from '../data/sample-habits';
+import { type Habit } from '../data/habit-types';
 import AppIcon from './app-icon';
 import { normalizedHabitEmoji } from '../data/habit-emoji';
 import { accentForeground, createThemedStyles, useTheme } from './theme';
@@ -12,16 +14,13 @@ export const habitViews: { id: HabitView; label: string }[] = [
   { id: 'grid', label: 'Activity grid' }, { id: 'list', label: 'Five-day checklist' }, { id: 'month', label: 'Monthly calendars' },
 ];
 
-export function previewNotice(label: string) {
-  Alert.alert(label, `${label} will be added in a future step.`);
-}
-
 export function RoundButton({ label, children, accent = false, onPress, disabled = false, compact = false }: {
-  label: string; children: ReactNode; accent?: boolean; onPress?: () => void; disabled?: boolean; compact?: boolean;
+  label: string; children: ReactNode; accent?: boolean; onPress: () => void; disabled?: boolean; compact?: boolean;
 }) {
+  const { t } = useTranslation();
   const styles = useStyles();
-  return <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled} accessibilityState={{ disabled }}
-    onPress={onPress ?? (() => previewNotice(label))}
+  return <Pressable accessibilityRole="button" accessibilityLabel={t(label)} disabled={disabled} accessibilityState={{ disabled }}
+    onPress={onPress}
     style={({ pressed }) => [styles.buttonTarget, (pressed || disabled) && styles.pressed]}>
     <View pointerEvents="none" style={[styles.roundButton, compact && styles.compactRoundButton, accent && styles.accentButton]}>
       <View style={compact && styles.compactButtonIcon}>{children}</View>
@@ -60,31 +59,32 @@ export function Checkmark({ color }: { color?: string }) {
   return <AppIcon name="check" size={22} color={color ?? colors.muted} strokeWidth={1.9} />;
 }
 
-export function Toolbar({ onAdd, onSettings, onPro, onWallpapers }: { onAdd: () => void; onSettings: () => void; onPro: () => void; onWallpapers: () => void }) {
+export function Toolbar({ onAdd, onSettings, onPro, onWallpapers, onCharts }: { onAdd: () => void; onSettings: () => void; onPro: () => void; onWallpapers: () => void; onCharts: () => void }) {
+  const { t } = useTranslation();
   const styles = useStyles();
   const { colors } = useTheme();
   return <View style={styles.toolbar}>
-    <RoundButton label="Settings" compact onPress={onSettings}><SettingsIcon /></RoundButton>
+    <RoundButton label={t("Settings")} compact onPress={onSettings}><SettingsIcon /></RoundButton>
     <View style={styles.toolbarRight}>
-      <RoundButton label="Pro" compact onPress={onPro}><View style={styles.proBadge}><Text allowFontScaling={false} style={styles.proText}>PRO</Text></View></RoundButton>
-      <RoundButton label="Wallpapers and badges" compact onPress={onWallpapers}><AppIcon name="wallpaper" /></RoundButton>
-      <RoundButton label="Charts" compact><ChartIcon /></RoundButton>
-      <RoundButton label="Add a habit" compact accent onPress={onAdd}><AppIcon name="plus" color={colors.onAccent} size={24} /></RoundButton>
+      <RoundButton label={t("Pro")} compact onPress={onPro}><View style={styles.proBadge}><Text allowFontScaling={false} style={styles.proText}>PRO</Text></View></RoundButton>
+      <RoundButton label={t("Wallpapers and badges")} compact onPress={onWallpapers}><AppIcon name="wallpaper" /></RoundButton>
+      <RoundButton label={t("Charts")} compact onPress={onCharts}><ChartIcon /></RoundButton>
+      <RoundButton label={t("Add a habit")} compact accent onPress={onAdd}><AppIcon name="plus" color={colors.onAccent} size={24} /></RoundButton>
     </View>
   </View>;
 }
 
 const useStyles = createThemedStyles((colors) => StyleSheet.create({
-  buttonTarget: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' },
-  roundButton: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.control, borderWidth: 1, borderColor: colors.controlBorder },
-  compactRoundButton: { width: 42, height: 42, borderRadius: 21 },
-  compactButtonIcon: { transform: [{ scale: 42 / 46 }] },
+  buttonTarget: { width: control.roundTarget, height: control.roundTarget, alignItems: 'center', justifyContent: 'center' },
+  roundButton: { width: control.round, height: control.round, borderRadius: control.round / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.control, borderWidth: 1, borderColor: colors.controlBorder },
+  compactRoundButton: { width: control.roundCompact, height: control.roundCompact, borderRadius: control.roundCompact / 2 },
+  compactButtonIcon: { transform: [{ scale: control.roundCompact / control.round }] },
   accentButton: { backgroundColor: colors.accent, borderColor: colors.accent },
   pressed: { opacity: 0.65 },
   habitIcon: { alignItems: 'center', justifyContent: 'center', borderCurve: 'continuous' },
   emoji: { textAlign: 'center', includeFontPadding: false, color: colors.text },
   toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 },
-  toolbarRight: { flexDirection: 'row', gap: 10 },
+  toolbarRight: { flexDirection: 'row', gap: space.xs },
   proBadge: { borderWidth: 1.25, borderColor: colors.icon, borderRadius: 4, paddingHorizontal: 3, paddingVertical: 1 },
   proText: { color: colors.icon, fontSize: 9, fontWeight: '600', lineHeight: 12 },
 }));

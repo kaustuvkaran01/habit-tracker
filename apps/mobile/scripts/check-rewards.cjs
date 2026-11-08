@@ -14,7 +14,7 @@ function source(name) {
   return module.exports;
 }
 
-const { addDays, dateFromKey, dateKey } = source('sample-habits');
+const { addDays, dateFromKey, dateKey } = source('habit-calendar');
 const { WALLPAPER_MILESTONES, collectionProgress, reconcileRewards, rewardsFor, selectWallpaper, startNextRewardCycle } = source('habit-rewards');
 const { HABIT_STORAGE_KEY, createHabitPersistence, decodeHabits, encodeHabits } = source('habit-storage');
 const { archiveHabit, restoreHabit, archiveDaysLeft, reconcileArchive } = source('habit-archive');
@@ -59,11 +59,11 @@ async function check() {
   }
   const weekdayHabit = habit(0, { repeatDays: [0, 1, 2, 3, 4], checkIns: weekdays });
   const weekdayToday = dateFromKey(weekdays.at(-1));
-  assert.equal(progress(weekdayHabit, weekdayToday).currentStreak, 10, 'Scheduled rest days do not break a streak');
+  assert.equal(progress(weekdayHabit, weekdayToday).currentStreak, 14, 'Completed scheduled days credit the intervening calendar days');
   assert.ok(progress(weekdayHabit, weekdayToday).collected.has(10));
   const missedWeekday = { ...weekdayHabit, checkIns: weekdays.filter((_, i) => i !== 4) };
-  assert.equal(progress(missedWeekday, weekdayToday).currentStreak, 5);
-  assert.ok(!progress(missedWeekday, weekdayToday).collected.has(7));
+  assert.equal(progress(missedWeekday, weekdayToday).currentStreak, 7);
+  assert.ok(progress(missedWeekday, weekdayToday).collected.has(7), 'The new run spans seven calendar days');
 
   const lastDay = addDays(start, 89);
   const champion = reconcileRewards(habit(90, { notes: { '2026-01-01': 'Keep this private' } }), lastDay);
@@ -115,7 +115,7 @@ async function check() {
   const day29 = addDays(deletionDay, 29);
   const day30 = addDays(deletionDay, 30);
   const legacy = decodeHabits(JSON.stringify({ version: 1, habits: [renamed] }));
-  const migrated = reconcileArchive(legacy, deletionDay, false);
+  const migrated = reconcileArchive(legacy, deletionDay, { status: 'verified', tier: 'free' });
   assert.equal(migrated.habits[0].archivedOn, dateKey(deletionDay));
   const withNote = { ...champion, notes: { '2026-01-01': 'First day' } };
   const archived = archiveHabit(withNote, deletionDay);
@@ -123,20 +123,20 @@ async function check() {
   assert.deepEqual(decodeHabits(encodeHabits(beforeExpiry)), beforeExpiry);
   assert.equal(archiveHabit(archived, day29), archived, 'Repeated deletes do not extend recovery');
   assert.equal(archiveDaysLeft(archived.archivedOn, day29), 1);
-  assert.equal(reconcileArchive(beforeExpiry, day29, false), beforeExpiry);
-  assert.equal(reconcileArchive(beforeExpiry, day30, true), beforeExpiry, 'Pro archives have no expiry');
+  assert.equal(reconcileArchive(beforeExpiry, day29, { status: 'verified', tier: 'free' }), beforeExpiry);
+  assert.equal(reconcileArchive(beforeExpiry, day30, { status: 'verified', tier: 'pro' }).habits[0].archiveProtected, true, 'Pro archives have no expiry and persist paid protection');
   const restored = restoreHabit(archived);
   assert.deepEqual(restored, { ...withNote, archived: false });
   assert.equal(archiveHabit(restored, day29).archivedOn, dateKey(day29));
-  const expired = reconcileArchive(beforeExpiry, day30, false);
+  const expired = reconcileArchive(beforeExpiry, day30, { status: 'verified', tier: 'free' });
   assert.deepEqual(expired.habits, []);
   const [collection] = expired.retainedCollections;
   assert.deepEqual(collection, { id: archived.id, name: archived.name, color: archived.color, icon: archived.icon, rewards: archived.rewards });
   assert.deepEqual(decodeHabits(encodeHabits(expired)), expired);
   assert.equal(collectionProgress(collection, day30).collected.size, 7);
   assert.equal(selectWallpaper(collection, 90).rewards.selectedWallpaper, 90);
-  assert.equal(reconcileArchive(expired, day30, false), expired, 'A purge runs only once');
-  assert.deepEqual(reconcileArchive(snapshot(archiveHabit(emojiHabit, deletionDay)), day30, false), snapshot());
+  assert.equal(reconcileArchive(expired, day30, { status: 'verified', tier: 'free' }), expired, 'A purge runs only once');
+  assert.deepEqual(reconcileArchive(snapshot(archiveHabit(emojiHabit, deletionDay)), day30, { status: 'verified', tier: 'free' }), snapshot());
 
   let stored = null;
   const writes = [];
