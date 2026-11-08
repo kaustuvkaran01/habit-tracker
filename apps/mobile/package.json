@@ -24,7 +24,8 @@
     "check:backup-ui": "node scripts/check-backup-ui.cjs",
     "check:privacy": "node scripts/check-privacy.cjs",
     "check:sources": "node scripts/check-sources.cjs",
-    "check:home": "node scripts/check-home-state.cjs"
+    "check:home": "node scripts/check-home-state.cjs",
+    "check:settings": "node scripts/check-settings-pages.cjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

@@ -116,12 +116,17 @@ async function check() {
   tree = Onboarding({ onContinue() {} }); assert.equal(all(tree, n => n.type === 'Pressable').length, 0, 'Settings replay does not change first-use completion');
 
   const sh = harness();
-  const Settings = load('src/screens/settings-screen.tsx', { '../components/reminder-status': 'ReminderStatus', './backup-screen': 'BackupScreen', react: sh.react, 'react-native': native,
-    '../components/private-modal': 'Modal', './privacy-support-screen': 'PrivacySupport',
+  const pageModule = load('src/screens/settings-page-content.tsx', { 'react-native': native, '../components/theme': theme, '../i18n/context': locale,
+    '../components/haptic-pressable': 'Pressable', '../components/habit-ui': { HabitIcon: 'HabitIcon' }, '../components/app-icon': 'AppIcon',
+    '../components/preference-ui': { usePreferenceStyles: () => ({}), PreferenceIcon: 'PreferenceIcon' },
+    './backup-screen': 'BackupScreen', './settings-guide-screen': 'Guide', './privacy-support-screen': 'PrivacySupport', './settings-preferences-screen': 'Preferences',
+  });
+  const Settings = load('src/screens/settings-screen.tsx', { '../components/reminder-status': 'ReminderStatus', './settings-page-content': pageModule, react: sh.react, 'react-native': native,
+    '../components/private-modal': 'Modal',
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 0 }) }, '../../app.json': { expo: { version: 'test' } },
     '../components/haptic-pressable': 'Pressable', '../components/habit-ui': { Chevron: 'Chevron', HabitIcon: 'HabitIcon' },
     '../components/preference-ui': { usePreferenceStyles: () => ({}), PrimaryButton: 'PrimaryButton', PreferenceIcon: 'PreferenceIcon', ProMark: 'ProMark', SheetHeader: 'SheetHeader' },
-    './settings-preferences-screen': 'Preferences', './settings-guide-screen': 'Guide', './daily-reminder-drawer': { DailyReminderSheet: 'Reminders' },
+    './daily-reminder-drawer': { DailyReminderSheet: 'Reminders' },
     '../components/app-preferences': { useAppPreferences: () => ({ preferences: DEFAULT_PREFERENCES, update() {} }) },
     '../components/pro-access': { useProAccess: () => FREE_ACCESS }, '../components/pro-upgrade': { useProUpgrade: () => ({ request: () => false, sheet: null }) },
     '../components/wallpaper-preview': 'WallpaperPreview', '../components/app-icon': 'AppIcon', '../components/right-drawer': 'RightDrawer', './onboarding-screen': 'Onboarding',
@@ -129,22 +134,25 @@ async function check() {
   }).default;
   const sp = { visible: true, habits: history.habits, today, onClose() {}, onDismiss() {}, onOpenPro() {}, onOpenWallpapers() {}, onRestore() {}, onMove() {} };
   const renderSettings = () => sh.render(() => Settings(sp)); tree = renderSettings();
+  const pageContent = () => all(tree, n => n.type === pageModule.default)[0];
+  const currentRoute = () => pageModule.default(pageContent().props);
   const groups = all(tree, n => Array.isArray(n.props?.rows));
   const rows = groups.flatMap(n => n.props.rows);
   assert.ok(rows.every(row => row.onPress || row.toggle), 'Every visible Settings row has real behaviour');
   assert.ok(!rows.some(row => ['Website','Follow On X','Rate The App','Send Feedback','Terms Of Service'].includes(row.label)), 'Unconfigured destinations are absent');
   for (const label of ['Privacy Policy', 'Support']) {
     rows.find(row => row.label === label).onPress(); tree = renderSettings();
-    assert.equal(all(tree, n => n.type === 'PrivacySupport')[0].props.page, label === 'Support' ? 'support' : 'privacy');
+    assert.equal(currentRoute().props.page, label === 'Support' ? 'support' : 'privacy');
     assert.equal(all(tree, n => n.type === 'RightDrawer')[0].props.visible, true);
     all(tree, n => n.type === 'RightDrawer')[0].props.onRequestClose(); tree = renderSettings();
     assert.equal(all(tree, n => n.type === 'RightDrawer')[0].props.visible, false, 'Privacy and Support keep back/swipe navigation');
+    assert.equal(currentRoute().props.page, label === 'Support' ? 'support' : 'privacy', 'Closing retains the page until drawer dismissal finishes');
   }
   assert.equal(rows.find(row => row.label === 'Daily Check-In Reminders').value, 'Off');
   assert.equal(typeof rows.find(row => row.label === 'Backup & Restore').onPress, 'function');
   rows.find(row => row.label === 'Quick guide').onPress(); tree = renderSettings();
   assert.equal(all(tree, n => n.type === 'RightDrawer')[0].props.visible, true);
-  assert.ok(all(tree, n => n.type === 'Guide').length);
+  assert.equal(currentRoute().type, 'Guide');
   all(tree, n => n.type === 'RightDrawer')[0].props.onRequestClose(); tree = renderSettings();
   assert.equal(all(tree, n => n.type === 'RightDrawer')[0].props.visible, false, 'Guide keeps the shared back/swipe drawer');
   sp.initialPage = 'archived'; renderSettings(); tree = renderSettings();
@@ -152,6 +160,11 @@ async function check() {
   let retries = 0; sp.saveError = true; sp.onRetrySave = async () => { retries++; return true; }; tree = renderSettings();
   const recovery = all(all(tree, n => n.type === 'RightDrawer')[0], n => n.type === 'PrimaryButton' && n.props.children === 'Retry saving');
   assert.equal(recovery.length, 1); await recovery[0].props.onPress(); assert.equal(retries, 1, 'Archive/reorder errors can be retried inside Settings');
+  pageContent().props.onBackupBusyChange(true); tree = renderSettings();
+  assert.equal(all(tree, n => n.type === 'Modal')[0].props.allowSwipeDismissal, false);
+  all(tree, n => n.type === 'RightDrawer')[0].props.onRequestClose(); tree = renderSettings();
+  assert.equal(all(tree, n => n.type === 'RightDrawer')[0].props.visible, true, 'Busy backup blocks submenu dismissal');
+  pageContent().props.onBackupBusyChange(false); tree = renderSettings();
   console.log('First-use checks passed: empty installs, durable welcome/skip, existing data, duplicate actions, load/save failures and recovery, session bypass, the first real log/correction/archive/restore/reload, empty-state distinctions, onboarding controls and Settings navigation/audit.');
 }
 check().catch(error => { console.error(error); process.exitCode = 1; });
