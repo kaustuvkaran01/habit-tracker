@@ -6,9 +6,14 @@ export function currentConfiguration(habit: Habit): HabitConfiguration {
 export function configurationOn(habit: Habit, day: string): HabitConfiguration {
   const recorded = latestRecord(habit, day);
   if (recorded) return recorded.configuration;
-  const revisions = habit.configurationHistory?.filter(item => item.effectiveOn === null || item.effectiveOn <= day) ?? [];
-  const revision = revisions[revisions.length - 1];
-  return revision?.configuration ?? currentConfiguration(habit);
+  const revisions = habit.configurationHistory ?? [];
+  // Find the last applicable revision without allocating/filtering the entire
+  // history for each calendar cell. Recorded-day provenance still takes priority.
+  for (let index = revisions.length - 1; index >= 0; index--) {
+    const revision = revisions[index];
+    if (revision.effectiveOn === null || revision.effectiveOn <= day) return revision.configuration;
+  }
+  return currentConfiguration(habit);
 }
 export function latestRecord(habit: Habit, day: string) {
   const records = habit.entries?.[day] ?? [];

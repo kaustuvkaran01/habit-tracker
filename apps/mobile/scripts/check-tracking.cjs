@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const { load, harness, tick } = require('./check-actions.cjs');
 const { applyHabitAction } = load('src/data/habit-actions.ts');
-const { dayProgress, initializeEntries } = load('src/data/habit-entries.ts');
+const { dayProgress, initializeEntries, configurationOn, currentConfiguration } = load('src/data/habit-entries.ts');
 const { dateFromKey, dateKey, addDays, streakDays, isScheduled } = load('src/data/habit-calendar.ts');
 const { emptyDraft, draftFromHabit } = load('src/data/habit-draft.ts');
 const { decodeHabits, encodeHabits, createHabitPersistence, HABIT_STORAGE_KEY, LEGACY_HABIT_STORAGE_KEY } = load('src/data/habit-storage.ts');
@@ -17,6 +17,19 @@ function act(state, action, today = now, ctx = context()) {
 }
 const progress = (state, day = dateKey(now)) => dayProgress(state.habits[0], day, dateKey(now));
 async function check() {
+  const originalHabit = make().habits[0], origin = dateFromKey('2026-01-01');
+  const revisions = Array.from({ length: 128 }, (_, index) => ({ effectiveOn: index === 0 ? null : dateKey(addDays(origin, index * 2)),
+    configuration: { ...currentConfiguration(originalHabit), tracking: { kind: 'count', target: index + 1 } } }));
+  const revised = { ...originalHabit, entries: {}, configurationHistory: revisions };
+  for (let offset = -2; offset <= 270; offset++) {
+    const key = dateKey(addDays(origin, offset)), matching = revisions.filter(item => item.effectiveOn === null || item.effectiveOn <= key);
+    assert.equal(configurationOn(revised, key), matching.at(-1).configuration, 'Historical lookup preserves the exact dated-rule object');
+  }
+  let revisionReads = 0;
+  const inspected = new Proxy(revisions, { get(target, key, receiver) { if (/^\d+$/.test(String(key))) revisionReads++; return Reflect.get(target, key, receiver); } });
+  assert.equal(configurationOn({ ...revised, configurationHistory: inspected }, dateKey(now)), revisions.at(-1).configuration);
+  assert.ok(revisionReads < 10, 'Current-day lookups should not scan every old configuration revision');
+
   let state = make();
   assert.equal(progress(state).status, 'unlogged');
   const first = context();
