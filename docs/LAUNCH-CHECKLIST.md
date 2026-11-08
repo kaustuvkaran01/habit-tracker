@@ -251,6 +251,8 @@ Required review and implementation gate. Start 18.1 before L02/L17 data changes,
 
 ### 18.1 — Review the current app structure
 
+The 8 November [code-quality pass](CODE-QUALITY-REVIEW.md) adds a tested checkpoint and focused simplification commits: save/restore and preference-race fixes, immutable Home selectors/shared presentation readiness, allocation-free recent-rule lookup, stable reminder effect inputs, explicit Settings routing and one complete regression command. [Architecture](ARCHITECTURE.md) now describes implemented ownership; older backend candidates are archived. These local improvements do not close native or cross-process storage acceptance.
+
 Initial code inspection completed 7 November 2026. [The L18.1 review](L18-STRUCTURE-REVIEW.md) records confirmed findings, proposed contracts and bounded slices R1–R6. No application behaviour changed during the review. R1 is now implemented and locally checked: production types/date rules are separate, habit mutations use pure shared transitions, and Home uses named store actions. Repository/sync/entitlement contracts, remaining refinements and device acceptance remain open; L18 is not signed off.
 
 - [x] Inspect screen/navigation ownership, habit types, tracking/reward calculations, persistence, error handling, capability policy, theme/haptics and platform code. Record concrete problems and a bounded refinement list. Evidence: L18.1 review and passing local checks.

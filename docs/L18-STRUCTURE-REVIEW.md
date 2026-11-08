@@ -1,5 +1,7 @@
 # L18.1 — Initial app structure review
 
+Historical inspection as of 7 November. For the implemented app after L02–L10 and the 8 November simplification pass, read [the current architecture](ARCHITECTURE.md) and [code-quality review](CODE-QUALITY-REVIEW.md). Findings below retain their original context. Local tracking/history, capability states, demo origins, lifecycle fixes and regression coverage have since landed; native durability, performance and final L18/L19 sign-off remain open.
+
 Reviewed 7 November 2026 against the current local working tree, based on commit `6fc2123`. Recent screens, localization and layout fixes are uncommitted and were included in this review. This report records findings and the proposed refinements; it does not implement them or sign off the production app.
 
 ## Outcome

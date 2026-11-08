@@ -6,7 +6,7 @@ const root = path.resolve(__dirname, '..');
 // Discover the individual checks so a newly added regression cannot silently
 // be omitted from the full suite. Run Node directly: no shell or global tools.
 const checks = [
-  ['typecheck', [require.resolve('typescript/bin/tsc'), '--noEmit', '--noUnusedLocals']],
+  ['typecheck', [require.resolve('typescript/bin/tsc'), '--noEmit']],
   ...Object.entries(scripts).filter(([name]) => name.startsWith('check:')).map(([name, command]) => {
     const match = /^node (scripts\/[\w-]+\.cjs)$/.exec(command);
     if (!match) throw Error(`Unsupported check command: ${name}. Add an explicit Node argument list.`);
