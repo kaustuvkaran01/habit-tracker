@@ -13,7 +13,8 @@ Each code step runs `npm run check` from `apps/mobile` before its commit. This d
 | Finding | Planned bounded improvement | Status |
 |---|---|---|
 | No single complete regression command; transforms run manually | Discover and run all checks, enforce import casing and native-free domain code | Implemented; regression recorded below |
-| Store save/restore and notification paths contain overlapping lifecycle guards | Reproduce races first; simplify the owning boundary rather than adding screen workarounds | Under review |
+| A restore started during an unfinished edit invalidates that edit's error revision; failed writes can appear saved | Reject restore at the store boundary while ordinary saves are pending; preserve preview/retry and original save ownership | Fixed; failing reproduction added before change |
+| Rejected preference patches are marked touched before validation and overwrite saved choices during hydration | Track touched keys only after validation succeeds | Fixed; failing reproduction added before change |
 | Home duplicates the same long presentation conditions for reminders and achievements | Give shared presentation readiness one name/owner; test each blocker and handoff | Planned |
 | Settings routes pages through a deeply nested JSX ternary with a default reorder fallback | Use explicit typed page routing and focused content components, preserving retained content during dismissal | Planned |
 | History and reward selectors repeatedly scan unchanged records | Remove demonstrated duplicate work while keeping dated rules and immutable data semantics | Under review |
@@ -23,6 +24,7 @@ Each code step runs `npm run check` from `apps/mobile` before its commit. This d
 
 - Baseline: 17 checks passed before the checkpoint commit.
 - Step 1: `npm run check` passed all 18 checks in 11.0 seconds, including 95-source iOS/Android transforms and import/domain boundaries. No runtime app code changed.
+- Step 2: reproduced both defects with failures before changing code: a failed edit/restore race returned no store error, and a rejected pre-load navigation patch overwrote a saved preference. Added store-level pending-save protection and moved touched-key tracking after validation. Regresses failed writes, unchanged disk/history, retained retry, later successful restore, pre-load rejection and absence of unsolicited preference writes. Full suite: 18/18 passed (10.7 seconds).
 
 ## Release limits retained
 

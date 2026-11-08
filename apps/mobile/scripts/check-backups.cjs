@@ -61,6 +61,29 @@ async function check() {
   store = render(); assert.equal(store.habits[0].id, 'replacement'); assert.equal(decodeHabits(stored).habits[0].id, 'replacement');
   await store.prepareForErase(); assert.equal(await store.actions.createHabit(draft), false, 'Quiesced stores cannot resurrect wiped habits');
 
+  // A restore must not take ownership of an unfinished ordinary save's revision.
+  let raceDisk = encodeHabits(data), blockNext = false, writesFail = false, rejectWrite;
+  const rh = harness(), raceHook = load('src/hooks/use-habit-store.ts', { react: rh.react, '@react-native-async-storage/async-storage': {
+    getItem: async key => key === HABIT_STORAGE_KEY ? raceDisk : null,
+    setItem: async (_key, value) => {
+      if (blockNext) { blockNext = false; await new Promise((_resolve, reject) => { rejectWrite = reject; }); }
+      if (writesFail) throw Error('Full disk');
+      raceDisk = value;
+    },
+  } }).default;
+  const raceRender = () => rh.render(() => raceHook(today, FREE_ACCESS)); raceRender(); await tick(); raceRender(); await tick();
+  const raceBefore = raceDisk; blockNext = true;
+  const pendingEdit = raceRender().actions.saveNote('personal', day, 'Unsaved edit'); await tick();
+  const pendingRestore = raceRender().importBackup({ ...backup, snapshot: snapshot([make('replacement')]) }, 'replace');
+  await tick(); writesFail = true; rejectWrite(Error('Full disk'));
+  assert.deepEqual(await Promise.all([pendingEdit, pendingRestore]), [false, false]);
+  let raced = raceRender();
+  assert.equal(raced.storageError, 'save', 'Failed restore cannot hide an unfinished edit’s save error');
+  assert.equal(raced.saving, false); assert.equal(raceDisk, raceBefore);
+  assert.equal(raced.habits[0].notes[day], 'Unsaved edit', 'Failed edit stays available for retry');
+  writesFail = false; assert.equal(await raced.retryStorage(), true); raced = raceRender(); assert.equal(raced.storageError, null);
+  assert.equal(await raced.importBackup({ ...backup, snapshot: snapshot([make('replacement')]) }, 'replace'), true, 'Restore works once the pending edit has settled');
+
   // Erasure never clears foreign data and resumes a partial wipe before hydration.
   const keys = [HABIT_STORAGE_KEY, LEGACY_HABIT_STORAGE_KEY, '@habit-tracker/preferences/v1', '@habit-tracker/theme/v1', '@habit-tracker/haptics/v1', '@habit-tracker/onboarding/v1'];
   const values = new Map([...keys.map(key => [key, 'private']), ['another-app', 'keep']]);

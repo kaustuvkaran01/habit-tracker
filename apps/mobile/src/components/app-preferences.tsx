@@ -64,12 +64,12 @@ export function AppPreferencesProvider({ children }: { children: ReactNode }) {
     if (frozen.current) return Promise.resolve(false);
     if (!canUse('dashboard-customization', latestAccess.current) && PRO_PREFERENCE_KEYS.some(key => Object.hasOwn(patch, key))) return Promise.resolve(false);
     const t = createTranslator(resolveLocale(latest.current.language));
-    for (const key of Object.keys(patch) as (keyof AppPreferences)[]) touched.current.add(key);
     const next = { ...latest.current, ...patch };
     if (!next.showViewBar && !next.swipeViews) {
       Alert.alert(t('Keep a way to change views'), t('Keep the bottom bar or swipe navigation enabled.'));
       return Promise.resolve(false);
     }
+    for (const key of Object.keys(patch) as (keyof AppPreferences)[]) touched.current.add(key);
     latest.current = next;
     setPreferences(next);
     return loaded.current ? persist(next) : Promise.resolve(false);

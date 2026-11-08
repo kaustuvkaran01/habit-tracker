@@ -168,6 +168,19 @@ async function check() {
   access = PRO; context = prefHarness.render(() => Provider({})).props.value;
   assert.equal(context.preferences.compactDays, 7); assert.equal(context.preferences.cardStreak, true, 'Upgrade restores saved paid display choices');
 
+  const late = harness(); let resolvePrefs, earlyWrites = 0;
+  const savedNavigation = { ...prefs, showViewBar: false, swipeViews: true };
+  const LatePreferences = load('src/components/app-preferences.tsx', {
+    react: { ...late.react, createContext: () => ({ Provider: 'Provider' }) }, 'react-native': native,
+    '@react-native-async-storage/async-storage': { getItem: () => new Promise(resolve => { resolvePrefs = resolve; }), setItem: async () => { earlyWrites++; } },
+    './pro-access': { useProAccess: () => PRO },
+  }).AppPreferencesProvider;
+  let early = late.render(() => LatePreferences({})).props.value;
+  assert.equal(await early.update({ showViewBar: false, swipeViews: false }), false);
+  resolvePrefs(JSON.stringify(savedNavigation)); await tick(); early = late.render(() => LatePreferences({})).props.value;
+  assert.equal(early.preferences.showViewBar, false, 'Rejected pre-hydration patches cannot overwrite saved navigation choices');
+  assert.equal(early.preferences.swipeViews, true); assert.equal(earlyWrites, 0, 'Rejected patches do not schedule an unsolicited write after hydration');
+
   const chooserHarness = harness(); let chosen, chooserWrites = 0, chooserCloses = 0;
   const Chooser = load('src/screens/free-habits-screen.tsx', {
     react: chooserHarness.react, 'react-native': native, 'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 34 }) },

@@ -23,12 +23,14 @@ export default function useHabitStore(today: Date, entitlement: Entitlement) {
   const latestSnapshot = useRef(snapshot), latestToday = useRef(today);
   const loaded = useRef(false), alive = useRef(true), revision = useRef(0), newHabitCounter = useRef(0);
   const maintenance = useRef(false);
+  const pendingSaves = useRef(0);
   latestToday.current = today;
   const latestAccess = useRef(entitlement);
   latestAccess.current = entitlement;
 
   const save = useCallback(async (next: HabitSnapshot): Promise<boolean> => {
     const current = ++revision.current;
+    pendingSaves.current++;
     if (alive.current) setSaving(true);
     try {
       await persistence.save(next);
@@ -38,7 +40,10 @@ export default function useHabitStore(today: Date, entitlement: Entitlement) {
     } catch {
       if (alive.current && revision.current === current) setError('save');
       return false;
-    } finally { if (alive.current && revision.current === current) setSaving(false); }
+    } finally {
+      pendingSaves.current--;
+      if (alive.current && revision.current === current) setSaving(false);
+    }
   }, []);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   useEffect(() => {
@@ -101,7 +106,9 @@ export default function useHabitStore(today: Date, entitlement: Entitlement) {
     setError(null); setAttempt(value => value + 1); return false;
   }, [save]);
   const importBackup = useCallback(async (backup: HabitBackup, mode: RestoreMode) => {
-    if (maintenance.current || (!loaded.current && mode !== 'replace')) return false;
+    // Do not invalidate an edit's save/error revision while its write is still
+    // pending. The preview remains available for restore after that save settles.
+    if (maintenance.current || pendingSaves.current > 0 || (!loaded.current && mode !== 'replace')) return false;
     maintenance.current = true; ++revision.current; setSaving(true);
     try {
       const next = restoreBackup(loaded.current ? latestSnapshot.current : null, backup, mode, latestToday.current, latestAccess.current);
