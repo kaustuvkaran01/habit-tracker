@@ -32,7 +32,8 @@ import FreeHabitsScreen from './free-habits-screen';
 import OnboardingScreen from './onboarding-screen';
 import { PrimaryButton, SheetHeader } from '../components/preference-ui';
 import useFirstUse from '../hooks/use-first-use';
-import { hasRecordedProgress, homeEmptyState } from '../data/first-use';
+import { hasRecordedProgress } from '../data/first-use';
+import { homePresentationReady, selectHomeHabits } from '../data/home-state';
 import { ReminderProvider } from '../components/reminders';
 import ReminderStatus from '../components/reminder-status';
 import BackupScreen from './backup-screen';
@@ -98,19 +99,14 @@ export default function HomeScreen() {
   ), [scrollX]);
   const currentIndex = useRef(0);
   const selectedHabit = habits.find((habit) => habit.id === selectedHabitId);
-  const active = habits.filter((habit) => !habit.archived);
+  const { active, categories, visible: activeHabits, archivedCount, emptyState } = useMemo(() => selectHomeHabits(habits, today, p, { category, onlyIncomplete, searchOpen, query }),
+    [habits, today, p.showCategoryFilter, p.showSearch, p.showCompletedFilter, p.completedHabits, category, onlyIncomplete, searchOpen, query]);
   const loggingIds = loggingHabitIds(snapshot, access);
   const excessHabits = !hasProAccess(access) && active.length > FREE_HABIT_LIMIT;
-  const archivedCount = habits.length - active.length;
-  const categories = [...new Set(active.flatMap((habit) => habit.categories ?? []))];
-  const policy = p.showCompletedFilter && onlyIncomplete ? 'hidden' : p.completedHabits;
-  const activeHabits = active.filter((habit) =>
-    (!p.showCategoryFilter || !category || !categories.includes(category) || habit.categories?.includes(category))
-    && (!p.showSearch || !searchOpen || habit.name.toLowerCase().includes(query.trim().toLowerCase()))
-    && (policy !== 'hidden' || !habit.checkIns.includes(dateKey(today))));
-  if (policy === 'bottom') activeHabits.sort((a,b) => Number(a.checkIns.includes(dateKey(today))) - Number(b.checkIns.includes(dateKey(today))));
-  const emptyState = homeEmptyState(habits, activeHabits, today, !!((p.showCategoryFilter && category && categories.includes(category)) || (p.showSearch && searchOpen && query.trim())));
-  useEffect(() => { if (Platform.OS !== 'ios' && !addingHabit && !settingsOpen && !chartsOpen && !proOpen && !wallpapersOpen && !choosingHabits) setNativeSheetPresented(false); }, [addingHabit, settingsOpen, chartsOpen, proOpen, wallpapersOpen, choosingHabits]);
+  const sheetOpen = addingHabit || settingsOpen || chartsOpen || proOpen || wallpapersOpen || choosingHabits;
+  const presentationReady = homePresentationReady({ sheetOpen, sheetPresented: nativeSheetPresented, entryPresented, detailBusy,
+    upgradeOpen: upgrade.open, habitDetailOpen, selectedHabitId });
+  useEffect(() => { if (Platform.OS !== 'ios' && !sheetOpen) setNativeSheetPresented(false); }, [sheetOpen]);
   const previousHabits = useRef(habits);
   const pendingCompletion = useRef<{ id: string; key: string } | null>(null);
 
@@ -257,13 +253,13 @@ export default function HomeScreen() {
   const entryEditor = entryTarget && entryHabit ? <HabitEntryDrawer key={`${entryTarget.id}:${entryTarget.day}:${entryTarget.session}`} visible={entryOpen} habit={entryHabit} day={entryTarget.day} today={today}
     onClose={() => setEntryOpen(false)} onDismiss={() => setEntryPresented(false)} onSave={(value, note) => actions.recordDay(entryTarget.id, entryTarget.day, value, note)} onRetry={retryStorage} /> : null;
   return <ReminderProvider snapshot={persistedSnapshot} ready={hydrated && !saving && !storageError}
-    navigationReady={!entryPresented && !addingHabit && !settingsOpen && !chartsOpen && !proOpen && !wallpapersOpen && !choosingHabits && !upgrade.open && !nativeSheetPresented && !detailBusy && (habitDetailOpen || selectedHabitId === null)}
+    navigationReady={presentationReady}
     onTarget={target => {
       if (target.kind === 'daily') { closeHabit(); selectView(0); return; }
       const habit = habits.find(item => item.id === target.habitId && !item.archived);
       if (!habit) { Alert.alert(t('Reminder'), t('This habit is no longer available.')); return; }
       setNotificationMonth(dateFromKey(target.day)); setSelectedHabitId(habit.id); setHabitDetailOpen(true);
-    }}><AchievementHost habits={habits} eligible={hydrated && (habitDetailOpen || selectedHabitId === null) && !entryPresented && !addingHabit && !settingsOpen && !chartsOpen && !proOpen && !wallpapersOpen && !choosingHabits && !upgrade.open && !nativeSheetPresented && !detailBusy}
+    }}><AchievementHost habits={habits} eligible={hydrated && presentationReady}
       saving={saving} storageError={storageError} onClaim={claimAchievement} onDismissAll={dismissAchievements} onRetry={retryStorage} onSelectWallpaper={actions.selectWallpaper}>
       {achievements => <View style={styles.screen}>
     <View style={[styles.header, { paddingTop: insets.top + space.md, paddingLeft: insets.left + layout.inset, paddingRight: insets.right + layout.inset }]}>

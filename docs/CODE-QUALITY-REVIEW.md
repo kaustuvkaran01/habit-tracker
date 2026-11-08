@@ -15,7 +15,7 @@ Each code step runs `npm run check` from `apps/mobile` before its commit. This d
 | No single complete regression command; transforms run manually | Discover and run all checks, enforce import casing and native-free domain code | Implemented; regression recorded below |
 | A restore started during an unfinished edit invalidates that edit's error revision; failed writes can appear saved | Reject restore at the store boundary while ordinary saves are pending; preserve preview/retry and original save ownership | Fixed; failing reproduction added before change |
 | Rejected preference patches are marked touched before validation and overwrite saved choices during hydration | Track touched keys only after validation succeeds | Fixed; failing reproduction added before change |
-| Home duplicates the same long presentation conditions for reminders and achievements | Give shared presentation readiness one name/owner; test each blocker and handoff | Planned |
+| Home duplicates long presentation conditions and performs filter/sort work in the screen body | Extract immutable Home selectors and a shared readiness rule; memoize view data by its actual inputs | Implemented; combination/transition regression added |
 | Settings routes pages through a deeply nested JSX ternary with a default reorder fallback | Use explicit typed page routing and focused content components, preserving retained content during dismissal | Planned |
 | History and reward selectors repeatedly scan unchanged records | Remove demonstrated duplicate work while keeping dated rules and immutable data semantics | Under review |
 | Architecture text mixes older backend proposals with current implemented ownership | Make current architecture the entry point; label historical plans and update evidence/gaps | Planned |
@@ -25,6 +25,7 @@ Each code step runs `npm run check` from `apps/mobile` before its commit. This d
 - Baseline: 17 checks passed before the checkpoint commit.
 - Step 1: `npm run check` passed all 18 checks in 11.0 seconds, including 95-source iOS/Android transforms and import/domain boundaries. No runtime app code changed.
 - Step 2: reproduced both defects with failures before changing code: a failed edit/restore race returned no store error, and a rejected pre-load navigation patch overwrote a saved preference. Added store-level pending-save protection and moved touched-key tracking after validation. Regresses failed writes, unchanged disk/history, retained retry, later successful restore, pre-load rejection and absence of unsolicited preference writes. Full suite: 18/18 passed (10.7 seconds).
+- Step 3: extracted `selectHomeHabits` and `homePresentationReady`; Home now memoizes normalized filters, category options and completion membership. Both reminders and celebrations consume the same readiness value. All 1,152 filter/control combinations match the pre-refactor rules, including retained disabled filters; ordering, immutable data, empty states and every native-dismissal blocker are checked. Native modal and gesture implementation is unchanged. Full suite: 19/19 passed (11.5 seconds), including both-platform transforms of 96 sources.
 
 ## Release limits retained
 
