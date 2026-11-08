@@ -92,11 +92,22 @@ async function check() {
       '../data/reminder-plan': { createReminderReconciler, planReminders: () => { plans++; return inputPlan; } },
     }).ReminderProvider;
     const props = { snapshot, ready: true, navigationReady: false, onTarget: () => navigation++ };
-    const render = () => h.render(() => Provider(props));
+    const render = () => {
+      const stringify = JSON.stringify;
+      JSON.stringify = (value, ...args) => {
+        assert.ok(!Array.isArray(value) || value[0] !== props.snapshot, 'Rendering reminder status must not serialize the entire habit history/notes');
+        return stringify(value, ...args);
+      };
+      try { return h.render(() => Provider(props)); } finally { JSON.stringify = stringify; }
+    };
     let tree = render(); await tick(); assert.equal(tree.props.value.permission, 'loading'); assert.equal(listCalls, 0);
     resolvePermission('granted'); await tick(); render(); await tick(); tree = render();
     assert.equal(scheduleCalls, 2); assert.equal(tree.props.value.queued, 2);
     render(); await tick(); assert.equal(scheduleCalls, 2, 'Unrelated renders never replace jobs');
+    const beforeSavedEdit = plans;
+    props.snapshot = { ...snapshot, habits: [{ ...habit, notes: { '2026-11-09': 'Private saved note' } }] };
+    render(); await tick(); render(); assert.ok(plans > beforeSavedEdit, 'A newly committed snapshot still reconciles');
+    assert.equal(scheduleCalls, 2, 'Unchanged notification fingerprints avoid duplicate jobs after saved edits');
     responseTarget(plan.items[0].target); render(); assert.equal(navigation, 0);
     props.navigationReady = true; render(); render(); assert.equal(navigation, 1);
     props.ready = false; inputPlan = { ...inputPlan, items: [] }; render(); await tick(); assert.equal(queue.size, 2, 'Unsaved data cannot cancel reminders');

@@ -28,7 +28,7 @@ export function ReminderProvider({ snapshot, ready, navigationReady, onTarget, c
   const [scheduling, setScheduling] = useState(false), [failed, setFailed] = useState(false);
   const [coverageUntil, setCoverageUntil] = useState<number | null>(null), [queued, setQueued] = useState(0);
   const [tick, setTick] = useState(0), [target, setTarget] = useState<ReminderTarget | null>(null);
-  const coordinator = useRef(createReminderReconciler(nativeReminderQueue));
+  const [coordinator] = useState(() => createReminderReconciler(nativeReminderQueue));
   const alive = useRef(true), permissionRevision = useRef(0), requesting = useRef(false);
   const latestTarget = useRef(onTarget); latestTarget.current = onTarget;
   const foreground = useRef(AppState.currentState === 'active');
@@ -51,14 +51,14 @@ export function ReminderProvider({ snapshot, ready, navigationReady, onTarget, c
       if (foreground.current) { void poll(); retry(); }
     });
     const timer = setInterval(() => { if (foreground.current) { void poll(); retry(); } }, 60_000);
-    return () => { alive.current = false; permissionRevision.current++; clearInterval(timer); subscription.remove(); removePresentation(); removeResponses(); coordinator.current.invalidate(); };
-  }, [poll, retry]);
+    return () => { alive.current = false; permissionRevision.current++; clearInterval(timer); subscription.remove(); removePresentation(); removeResponses(); coordinator.invalidate(); };
+  }, [poll, retry, coordinator]);
   useEffect(() => { if (target && navigationReady) { latestTarget.current(target); setTarget(null); } }, [target, navigationReady]);
-  // A digest prevents unrelated screen renders from replacing an in-flight plan.
-  const digest = JSON.stringify([snapshot, persistedPreferences?.dailyReminder, access, locale]);
+  // These owners publish immutable committed values with stable identities.
+  // Depend on them directly; do not stringify private multi-year history on render.
   const paused = !ready || !snapshot || !persistedPreferences || access.status === 'loading';
   useEffect(() => {
-    const reconciler = coordinator.current;
+    const reconciler = coordinator;
     if (frozen.current || !ready || !snapshot || !persistedPreferences || permission === 'unavailable' || permission === 'loading' || access.status === 'loading') { reconciler.invalidate(); setScheduling(false); return; }
     let cancelled = false;
     const plan = planReminders(snapshot, persistedPreferences.dailyReminder, access, new Date(), t);
@@ -70,8 +70,8 @@ export function ReminderProvider({ snapshot, ready, navigationReady, onTarget, c
     }).catch(() => { if (!cancelled) { setFailed(true); setQueued(0); setCoverageUntil(null); } })
       .finally(() => { if (!cancelled) setScheduling(false); });
     return () => { cancelled = true; reconciler.invalidate(); };
-    // The digest captures every scheduling input; callbacks/styles are not inputs.
-  }, [digest, ready, permission, tick]);
+    // Locale captures translated copy; callback/style identities are not inputs.
+  }, [snapshot, persistedPreferences?.dailyReminder, access, locale, ready, permission, tick, coordinator]);
 
   const requestPermission = useCallback(async () => {
     requesting.current = true; permissionRevision.current++;
@@ -84,7 +84,7 @@ export function ReminderProvider({ snapshot, ready, navigationReady, onTarget, c
   const allowed = snapshot ? new Set(loggingHabitIds(snapshot, access)) : new Set<string>();
   const configured = !!(persistedPreferences?.dailyReminder.enabled || snapshot?.habits.some(habit => allowed.has(habit.id) && !habit.archived && !habit.demo && !habit.remindersPaused && habitReminderTimes(habit).length > 0));
   return <Context.Provider value={{ permission, configured, scheduling, paused, failed, coverageUntil, queued, requestPermission, openSettings,
-    async prepareForErase() { frozen.current = true; coordinator.current.invalidate(); await coordinator.current.flush(); },
+    async prepareForErase() { frozen.current = true; coordinator.invalidate(); await coordinator.flush(); },
     retry() { void poll(); retry(); } }}>{children}</Context.Provider>;
 }
 export function useReminders() { return useContext(Context); }
